@@ -40,8 +40,8 @@ function setup(rawData) {
 
   console.log(data);
 
-  maxDeces = 450;
-  maxInfection = 4000;
+  maxDeces = 28000;
+  maxInfection = 650000;
 
   let date = moment("2020-02-01T00:00:00");
   let today = moment().format("YYYY-MM-DDT00:00:00");
@@ -114,13 +114,13 @@ function setup(rawData) {
         .attr("dy", height - margin.top - margin.bottom + 20)
     )
     .append("text")
-    .attr("x", width - margin.right - 20)
+    .attr("x", width - margin.right - 40)
     .attr("y", (3 * margin.bottom) / 4)
     .attr("fill", "currentColor")
     .attr("text-anchor", "start")
-    .style("font-size", "14px")
+    .style("font-size", "18px")
     .style("font-weight", "bold")
-    .text("Death/1M");
+    .text("Death");
 
   svg
     .append("g")
@@ -139,9 +139,9 @@ function setup(rawData) {
     .attr("y", margin.top / 2)
     .attr("fill", "currentColor")
     .attr("text-anchor", "start")
-    .style("font-size", "14px")
+    .style("font-size", "18px")
     .style("font-weight", "bold")
-    .text("Cases/1M");
+    .text("Cases");
 
   svg
     .append("defs")
@@ -244,6 +244,7 @@ function deces(datum) {
 
   let p = pays.find((p) => p.name == datum.name);
   let v = x((datum.datum.Deces / p.population) * 1000000);
+  v = x(datum.datum.Deces)
   return v;
 }
 
@@ -253,6 +254,7 @@ function infection(datum) {
   }
   let p = pays.find((p) => p.name == datum.name);
   let v = y((datum.datum.Infection / p.population) * 1000000);
+  v = y(datum.datum.Infection)
   return v;
 }
 
