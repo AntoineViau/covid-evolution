@@ -1,87 +1,113 @@
 class Chart1 {
-  pays = [
+  d3;
+
+  countries = [
     { name: "Italie", population: 60 * 1000000 },
     { name: "Espagne", population: 46 * 1000000 },
     { name: "États-Unis", population: 327 * 1000000 },
+    { name: "Belgique", population: 11 * 1000000 },
     { name: "Royaume-Uni", population: 66 * 1000000 },
     { name: "Allemagne", population: 83 * 1000000 },
     { name: "Suède", population: 10 * 1000000 },
     { name: "France", population: 65 * 1000000 },
   ];
 
-  delay = 250;
-  firstDay = 25;
+  nbFramesPerDay = 15;
+  firstDayOffset = 0;
   svg;
   x;
   y;
 
-  go() {
-    fetch("data.json")
-      .then((response) => response.json())
-      .then((json) => {
-        this.setup(json);
-        setTimeout(() => this.update(this.firstDay), this.delay);
-      })
-  }
-
-  setup(rawData) {
-    this.data = this.pays.map((p) =>
-      rawData.PaysData.filter((datum) => datum.Pays == p.name).map(datum => ({ ...datum, population: p.population })).reverse()
+  setup(d3, rawData, nbFramesPerDay) {
+    this.d3 = d3;
+    this.nbFramesPerDay = nbFramesPerDay;
+    let flatten = this.countries
+      .map((p) =>
+        rawData.PaysData.filter((datum) => datum.Pays == p.name)
+          .map((datum) => ({ ...datum, population: p.population }))
+          .reverse()
+      )
+      .flat();
+    let maxDeces = Math.max(
+      ...flatten.map((d) => (d.Deces / d.population) * 1000000)
     );
-    let maxDeces = Math.max(...this.data.flat().map(d => d.Deces / d.population * 1000000));
-    let maxInfection = Math.max(...this.data.flat().map(d => d.Infection / d.population * 1000000));
+    let maxInfection = Math.max(
+      ...flatten.map((d) => (d.Infection / d.population) * 1000000)
+    );
 
-    let date = moment("2020-02-01T00:00:00");
-    let today = moment().format("YYYY-MM-DDT00:00:00");
-    let nbDays = 200;
-    let out = [];
-    for (let day = 0; day < nbDays; day++) {
-      if (date.format("YYYY-MM-DDTHH:mm:ss") == today) {
-        break;
-      }
-      let obj = {
+    let date = moment("2020-03-01T00:00:00");
+    let today = moment();
+    this.data = [];
+    let from, to;
+    while (!date.isAfter(today, "day")) {
+      from = to;
+      to = {
         date: moment(date),
-        dateStr: date.format("YYYY-MM-DDTHH:mm:ss"),
-        pays: this.pays.map((p) => {
+        countries: this.countries.map((p) => {
+          let datum = rawData.PaysData.find(
+            (d) =>
+              d.Pays == p.name && d.Date == date.format("YYYY-MM-DDTHH:mm:ss")
+          );
+
           return {
             ...p,
-            datum: rawData.PaysData.find(
-              (d) =>
-                d.Pays == p.name && d.Date == date.format("YYYY-MM-DDTHH:mm:ss")
-            ),
+            deces: datum.Deces,
+            infections: datum.Infection,
           };
         }),
       };
-      out = [...out, obj];
+      for (let i = 0; from && to && i <= this.nbFramesPerDay; i++) {
+        let frameData = this._interpolate(from, to, i);
+        this.data = [...this.data, frameData];
+      }
       date = date.add(1, "days");
     }
-    this.data = out;
 
     let width = 800;
     let height = 600;
     let margin = { bottom: 50, top: 50, left: 50, right: 50 };
 
-    // DECES
-    this.x = d3
-      .scaleLinear()
-      .domain([0, maxDeces])
-      .range([margin.left, width - margin.right]);
-    let xAxis = d3.axisTop(this.x).tickSize(height - margin.top - margin.bottom);
-
-    // INFECTIONS
-    this.y = d3
-      .scaleLinear()
-      .domain([0, maxInfection])
-      .range([height - margin.bottom, margin.top]);
-    let yAxis = d3.axisRight(this.y).tickSize(width - margin.left - margin.right);
-
-    let svg = d3
+    let svg = this.d3
       .select(".chart1")
       .style("background", "#ffffff")
       .style("width", width)
       .style("height", height)
+      .style("font-size", "12px")
+      .style("font-family", "arial")
+      .style("font-weight", "bold")
       .attr("viewBox", [0, 0, width, height]);
 
+    svg
+      .append("text")
+      .attr("x", width - margin.right - 150)
+      .attr("y", margin.top - 25)
+      .text("Source: politologue.com");
+
+    svg
+      .append("text")
+      .attr("x", width - margin.right - 150)
+      .attr("y", margin.top - 10)
+      .text("Icons: flaticon.com");
+
+    // xAxis - Deaths
+    this.x = this.d3
+      .scaleLinear()
+      .domain([0, maxDeces])
+      .range([margin.left, width - margin.right]);
+    let xAxis = this.d3
+      .axisTop(this.x)
+      .tickSize(height - margin.top - margin.bottom);
+
+    // yAxis - Infections
+    this.y = this.d3
+      .scaleLinear()
+      .domain([0, maxInfection])
+      .range([height - margin.bottom, margin.top]);
+    let yAxis = this.d3
+      .axisRight(this.y)
+      .tickSize(width - margin.left - margin.right);
+
+    // Grid - xAxis
     svg
       .append("g")
       .attr("transform", `translate(${0},${height - margin.bottom})`)
@@ -108,6 +134,7 @@ class Chart1 {
       .style("font-weight", "bold")
       .text("Deaths/1M");
 
+    // Grid - yAxis
     svg
       .append("g")
       .attr("transform", `translate(${margin.left},${0})`)
@@ -129,10 +156,11 @@ class Chart1 {
       .style("font-weight", "bold")
       .text("Cases/1M");
 
+    // Flags
     svg
       .append("defs")
       .selectAll("pattern")
-      .data(this.pays)
+      .data(this.countries)
       .enter()
       .append("pattern")
       .attr("id", (p) => `${p.name.toLowerCase()}`)
@@ -146,11 +174,14 @@ class Chart1 {
       .attr("y", "0%")
       .attr("width", "512")
       .attr("height", "512")
-      .attr("xlink:xlink:href", (p) => `${p.name.toLowerCase()}.svg`);
+      .attr(
+        "xlink:xlink:href",
+        (p) => `http://localhost:8080/${p.name.toLowerCase()}.svg`
+      );
 
     svg
       .selectAll(".chart1 .day")
-      .data([this.data[this.firstDay]])
+      .data([this.data[this.firstDayOffset]])
       .enter()
       .append("text")
       .attr("class", "day")
@@ -166,48 +197,66 @@ class Chart1 {
 
     svg
       .selectAll(".chart1 .circle")
-      .data(this.data[this.firstDay].pays)
+      .data(this.data[this.firstDayOffset].countries)
       .enter()
       .append("circle")
       .attr("class", "circle")
       .attr("r", (d) => 20)
-      .attr("cx", d => this.infection(d))
-      .attr("cy", d => this.deces(d))
+      .attr("cx", (d) => this.deces(d))
+      .attr("cy", (d) => this.infection(d))
       .attr("stroke", "black")
       .attr("stroke-width", "1px")
       .attr("fill", (d) => {
         let v = `url(#${d.name.toLowerCase()})`;
         return v;
       });
+    return this.data;
+  }
+
+  _interpolate(from, to, frame) {
+    let coef = frame / this.nbFramesPerDay;
+    return {
+      ...(frame < this.nbFramesPerDay ? from : to),
+      coef,
+      countries: this.countries.map((country) => {
+        let fromDatum = from.countries.find((p) => p.name == country.name);
+        let toDatum = to.countries.find((p) => p.name == country.name);
+
+        let deces = fromDatum.deces + (toDatum.deces - fromDatum.deces) * coef;
+        let infections =
+          fromDatum.infections +
+          (toDatum.infections - fromDatum.infections) * coef;
+        return {
+          ...country,
+          deces,
+          infections,
+        };
+      }),
+    };
   }
 
   update(day) {
-    d3.selectAll(".chart1 .day")
+    this.d3
+      .selectAll(".chart1 .day")
       .data([this.data[day]])
       .text((d) => d.date.format("DD/MM/YYYY"));
 
-    d3.selectAll(".chart1 .circle")
-      .data(this.data[day].pays)
-      .transition(d3.transition().duration(this.delay).ease(d3.easeLinear))
-      .attr("cx", d => this.deces(d))
-      .attr("cy", d => this.infection(d));
-
-    if (day + 1 == this.data.length) {
-      return;
-    }
-    setTimeout(() => this.update(day + 1), this.delay);
+    this.d3
+      .selectAll(".chart1 .circle")
+      .data(this.data[day].countries)
+      .attr("cx", (d) => this.deces(d))
+      .attr("cy", (d) => this.infection(d));
   }
 
   deces(datum) {
-    let p = this.pays.find((p) => p.name == datum.name);
-    let v = this.x((datum.datum.Deces / p.population) * 1000000);
-    return v;
+    return this.x((datum.deces / datum.population) * 1000000);
   }
 
   infection(datum) {
-    let p = this.pays.find((p) => p.name == datum.name);
-    let v = this.y((datum.datum.Infection / p.population) * 1000000);
-    return v;
+    return this.y((datum.infections / datum.population) * 1000000);
   }
 }
 
+module.exports = {
+  Chart1: Chart1,
+};
