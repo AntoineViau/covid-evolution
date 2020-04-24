@@ -176,7 +176,7 @@ class Chart1 {
       .attr("height", "512")
       .attr(
         "xlink:xlink:href",
-        (p) => `http://localhost:8080/${p.name.toLowerCase()}.svg`
+        (p) => `http://localhost:8080/assets/${p.name.toLowerCase()}.svg`
       );
 
     svg
