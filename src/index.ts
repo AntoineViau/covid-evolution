@@ -1,31 +1,32 @@
-const express = require("express");
+import express from "express";
+import * as fs from "fs";
+import * as jsdom from "jsdom";
+import * as d3 from "d3";
+import { Chart1 } from "./chart1";
+
+const { JSDOM } = jsdom;
+
 const app = express();
 app.use(express.static("./"));
 app.listen(3000);
 
-const fs = require("fs");
-const d3 = require("d3");
-moment = require("moment");
-const jsdom = require("jsdom");
-const { JSDOM } = jsdom;
-
 const fakeDom = new JSDOM(`
 <!DOCTYPE html><html>
 <body>
-  <div class="chart1-container">  
+  <div class="chart1-container">
     <svg class="chart1"></svg>
   </div>
 </body>
 </html>`);
 
-document = fakeDom.window.document;
+const globalAny: any = global;
+globalAny.document = fakeDom.window.document;
 
-const Chart1 = require("./chart1.js");
-const chart1 = new Chart1.Chart1();
+const chart1 = new Chart1();
 const rawData = fs.readFileSync("data.json");
-const json = JSON.parse(rawData);
+const json = JSON.parse(rawData.toString());
 const nbFramesPerDay = 15;
-chart1.setup(d3, json, nbFramesPerDay);
+chart1.setup(json, nbFramesPerDay);
 
 const { createConverter } = require("convert-svg-to-png");
 const converter = createConverter();

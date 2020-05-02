@@ -1,0 +1,4 @@
+#Covid_19 countries evolutions animated #dataviz.
+Made with d3.js, source includes Gif generation.
+
+https://github.com/AntoineViau/covid-evolution

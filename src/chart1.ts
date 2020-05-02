@@ -1,6 +1,30 @@
-class Chart1 {
-  d3;
+import moment = require("moment");
+import * as d3 from "d3";
+import { ScaleLinear } from "d3";
 
+interface RawData {
+  PaysData: any[];
+}
+
+interface RawDatum {
+  Deces: number;
+  Infection: number;
+  population: number;
+}
+
+type FrameDatum = {
+  date: any;
+  countries: CountryDayDatum[];
+};
+
+type CountryDayDatum = {
+  name: string;
+  deces: number;
+  infections: number;
+  population: number;
+};
+
+export class Chart1 {
   countries = [
     { name: "Italie", population: 60 * 1000000 },
     { name: "Espagne", population: 46 * 1000000 },
@@ -14,12 +38,12 @@ class Chart1 {
 
   nbFramesPerDay = 15;
   firstDayOffset = 0;
-  svg;
-  x;
-  y;
+  svg: any;
+  x: ScaleLinear<number, number> | undefined;
+  y: ScaleLinear<number, number> | undefined;
+  data: FrameDatum[] = [];
 
-  setup(d3, rawData, nbFramesPerDay) {
-    this.d3 = d3;
+  setup(rawData: RawData, nbFramesPerDay: number) {
     this.nbFramesPerDay = nbFramesPerDay;
     let flatten = this.countries
       .map((p) =>
@@ -29,16 +53,17 @@ class Chart1 {
       )
       .flat();
     let maxDeces = Math.max(
-      ...flatten.map((d) => (d.Deces / d.population) * 1000000)
+      ...flatten.map((d: RawDatum) => (d.Deces / d.population) * 1000000)
     );
     let maxInfection = Math.max(
-      ...flatten.map((d) => (d.Infection / d.population) * 1000000)
+      ...flatten.map((d: RawDatum) => (d.Infection / d.population) * 1000000)
     );
 
     let date = moment("2020-03-01T00:00:00");
     let today = moment();
     this.data = [];
-    let from, to;
+    let from: FrameDatum | undefined; // = { date: undefined, countries: [] };
+    let to: FrameDatum | undefined; //= { date: undefined, countries: [] };
     while (!date.isAfter(today, "day")) {
       from = to;
       to = {
@@ -48,6 +73,9 @@ class Chart1 {
             (d) =>
               d.Pays == p.name && d.Date == date.format("YYYY-MM-DDTHH:mm:ss")
           );
+          if (!datum) {
+            console.log("not found for", date.format("YYYY-MM-DDTHH:mm:ss"));
+          }
 
           return {
             ...p,
@@ -67,7 +95,7 @@ class Chart1 {
     let height = 600;
     let margin = { bottom: 50, top: 50, left: 50, right: 50 };
 
-    let svg = this.d3
+    let svg = d3
       .select(".chart1")
       .style("background", "#ffffff")
       .style("width", width)
@@ -75,7 +103,7 @@ class Chart1 {
       .style("font-size", "12px")
       .style("font-family", "arial")
       .style("font-weight", "bold")
-      .attr("viewBox", [0, 0, width, height]);
+      .attr("viewBox", `0, 0, ${width}, ${height}`);
 
     svg
       .append("text")
@@ -90,20 +118,20 @@ class Chart1 {
       .text("Icons: flaticon.com");
 
     // xAxis - Deaths
-    this.x = this.d3
+    this.x = d3
       .scaleLinear()
       .domain([0, maxDeces])
       .range([margin.left, width - margin.right]);
-    let xAxis = this.d3
+    let xAxis = d3
       .axisTop(this.x)
       .tickSize(height - margin.top - margin.bottom);
 
     // yAxis - Infections
-    this.y = this.d3
+    this.y = d3
       .scaleLinear()
       .domain([0, maxInfection])
       .range([height - margin.bottom, margin.top]);
-    let yAxis = this.d3
+    let yAxis = d3
       .axisRight(this.y)
       .tickSize(width - margin.left - margin.right);
 
@@ -213,19 +241,23 @@ class Chart1 {
     return this.data;
   }
 
-  _interpolate(from, to, frame) {
+  _interpolate(from: FrameDatum, to: FrameDatum, frame: number) {
     let coef = frame / this.nbFramesPerDay;
     return {
       ...(frame < this.nbFramesPerDay ? from : to),
       coef,
       countries: this.countries.map((country) => {
-        let fromDatum = from.countries.find((p) => p.name == country.name);
-        let toDatum = to.countries.find((p) => p.name == country.name);
-
-        let deces = fromDatum.deces + (toDatum.deces - fromDatum.deces) * coef;
+        let fromDatum = from.countries.find(
+          (p: CountryDayDatum) => p.name == country.name
+        );
+        let toDatum = to.countries.find(
+          (p: CountryDayDatum) => p.name == country.name
+        );
+        let deces =
+          fromDatum!.deces + (toDatum!.deces - fromDatum!.deces) * coef;
         let infections =
-          fromDatum.infections +
-          (toDatum.infections - fromDatum.infections) * coef;
+          fromDatum!.infections +
+          (toDatum!.infections - fromDatum!.infections) * coef;
         return {
           ...country,
           deces,
@@ -235,28 +267,22 @@ class Chart1 {
     };
   }
 
-  update(day) {
-    this.d3
-      .selectAll(".chart1 .day")
+  update(day: number) {
+    d3.selectAll(".chart1 .day")
       .data([this.data[day]])
       .text((d) => d.date.format("DD/MM/YYYY"));
 
-    this.d3
-      .selectAll(".chart1 .circle")
+    d3.selectAll(".chart1 .circle")
       .data(this.data[day].countries)
-      .attr("cx", (d) => this.deces(d))
-      .attr("cy", (d) => this.infection(d));
+      .attr("cx", (d: CountryDayDatum) => this.deces(d))
+      .attr("cy", (d: CountryDayDatum) => this.infection(d));
   }
 
-  deces(datum) {
-    return this.x((datum.deces / datum.population) * 1000000);
+  deces(datum: CountryDayDatum) {
+    return this.x!((datum.deces / datum.population) * 1000000);
   }
 
-  infection(datum) {
-    return this.y((datum.infections / datum.population) * 1000000);
+  infection(datum: CountryDayDatum) {
+    return this.y!((datum.infections / datum.population) * 1000000);
   }
 }
-
-module.exports = {
-  Chart1: Chart1,
-};
