@@ -37,4 +37,6 @@ if (process.argv.length != 4) {
 let gifFileName = process.argv[2];
 let txtFileName = process.argv[3];
 
-tweet(gifFileName, txtFileName).catch(console.error);
+tweet(gifFileName, txtFileName)
+  .then((_) => console.log("done"))
+  .catch(console.error);

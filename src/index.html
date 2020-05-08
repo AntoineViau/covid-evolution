@@ -32,7 +32,7 @@
         .then((response) => response.json())
         .then((json) => {
           let data = chart1.setup(d3, json, nbFramesPerDay);
-          let firstFrame = 0; //data.length - 1 * nbFramesPerDay;
+          let firstFrame = 0;
           setTimeout(() => {
             update(firstFrame);
           }, frameDuration);

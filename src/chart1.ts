@@ -26,14 +26,17 @@ type CountryDayDatum = {
 
 export class Chart1 {
   countries = [
-    { name: "Italie", population: 60 * 1000000 },
-    { name: "Espagne", population: 46 * 1000000 },
+    { name: "Pays-Bas", population: 17.75 * 1000000 },
+    { name: "Danemark", population: 5.8 * 1000000 },
+    { name: "Autriche", population: 8.85 * 1000000 },
+    { name: "Italie", population: 60.36 * 1000000 },
+    { name: "Espagne", population: 46.94 * 1000000 },
     { name: "États-Unis", population: 327 * 1000000 },
-    { name: "Belgique", population: 11 * 1000000 },
-    { name: "Royaume-Uni", population: 66 * 1000000 },
-    { name: "Allemagne", population: 83 * 1000000 },
-    { name: "Suède", population: 10 * 1000000 },
-    { name: "France", population: 65 * 1000000 },
+    { name: "Belgique", population: 11.46 * 1000000 },
+    { name: "Royaume-Uni", population: 66.65 * 1000000 },
+    { name: "Allemagne", population: 83.02 * 1000000 },
+    { name: "Suède", population: 10.23 * 1000000 },
+    { name: "France", population: 66.99 * 1000000 },
   ];
 
   nbFramesPerDay = 15;
@@ -52,6 +55,7 @@ export class Chart1 {
           .reverse()
       )
       .flat();
+
     let maxDeces = Math.max(
       ...flatten.map((d: RawDatum) => (d.Deces / d.population) * 1000000)
     );
@@ -62,8 +66,8 @@ export class Chart1 {
     let date = moment("2020-03-01T00:00:00");
     let today = moment();
     this.data = [];
-    let from: FrameDatum | undefined; // = { date: undefined, countries: [] };
-    let to: FrameDatum | undefined; //= { date: undefined, countries: [] };
+    let from: FrameDatum | undefined;
+    let to: FrameDatum | undefined;
     while (!date.isAfter(today, "day")) {
       from = to;
       to = {
