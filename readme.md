@@ -1,5 +1,7 @@
 # Covid-19 evolution data visualization
 
+![example, 08/05/2020](https://antoineviau.com/covid-evolution/2020-05-08.gif)
+
 Generate an animated data visualization of Covid-19 evolution.  
 Y-axis: infections  
 X-axis: deaths  
