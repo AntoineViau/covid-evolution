@@ -19,9 +19,9 @@ The target infrastructure is Amazon Web Services Lambda functions.
 The idea is to call the Lamba function each day: it will produce the Gif and tweet it.  
 To do so, we need to have a specific version of FFMEG, bundled by
 
-## View in browser
+## Build
 
-    ./node_modules/.bin/static
+    npx tsc
 
 ## Generate Gif
 
